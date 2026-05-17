@@ -6,30 +6,6 @@ A [pi](https://github.com/earendil-works/pi-coding-agent) extension for generati
 
 ## Installation
 
-### From git
-
-Install directly from the GitHub repository:
-
-```bash
-pi install git:https://github.com/EAmode/pi-commit.git
-# or
-pi install https://github.com/EAmode/pi-commit.git
-```
-
-For a project-local install that can be committed in `.pi/settings.json`:
-
-```bash
-pi install -l git:https://github.com/EAmode/pi-commit.git
-```
-
-Use a ref to pin a version:
-
-```bash
-pi install git:https://github.com/EAmode/pi-commit.git@v0.1.0
-```
-
-### From npm
-
 Install the pi package from npm:
 
 ```bash
@@ -40,32 +16,6 @@ For a project-local install that can be committed in `.pi/settings.json`:
 
 ```bash
 pi install -l npm:@eamode/pi-commit
-```
-
-### Local development
-
-The extension source lives in:
-
-```txt
-src/index.ts
-```
-
-Run it directly for testing:
-
-```bash
-pi -e ./src/index.ts
-```
-
-Or install this checkout as a local pi package:
-
-```bash
-pi install ./
-```
-
-For a project-local install that records the package in `.pi/settings.json`:
-
-```bash
-pi install -l ./
 ```
 
 Then reload pi if it is already running:

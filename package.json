@@ -16,6 +16,7 @@
     "autocommit"
   ],
   "files": [
+    "extensions",
     "src",
     "README.md",
     "plans"
@@ -45,7 +46,7 @@
   },
   "pi": {
     "extensions": [
-      "src/index.ts"
+      "extensions/index.ts"
     ]
   }
 }
