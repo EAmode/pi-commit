@@ -45,7 +45,7 @@ Behavior notes:
 Suggested project structure:
 
 ```txt
-.pi/extensions/pi-commit/
+src/
   index.ts              # extension entry, registers /autocommit
   git.ts                # repo/submodule discovery, status, diff helpers
   message.ts            # isolated cheap-model message generation

@@ -1,0 +1,39 @@
+{
+  "name": "@eamode/pi-commit",
+  "version": "0.1.0",
+  "description": "pi extension for automatic changelog-friendly Conventional Commits with submodule support.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "conventional-commits",
+    "git",
+    "autocommit"
+  ],
+  "files": [
+    "src",
+    "README.md",
+    "plans"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "pack:dry-run": "npm pack --dry-run"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://dev.eamode.com/api/packages/eamode/npm/"
+  },
+  "pi": {
+    "extensions": [
+      "src/index.ts"
+    ]
+  }
+}

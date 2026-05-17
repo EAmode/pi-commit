@@ -1,0 +1,8 @@
+# Gitea npm registry for this package.
+# Replace `eamode` with the Gitea user/org that owns the package if different.
+@eamode:registry=https://dev.eamode.com/api/packages/eamode/npm/
+
+# For publishing or installing private packages, authenticate with one of:
+# npm login --scope=@eamode --registry=https://dev.eamode.com/api/packages/eamode/npm/
+# or add an auth token to your user-level ~/.npmrc:
+# //dev.eamode.com/api/packages/eamode/npm/:_authToken=YOUR_GITEA_TOKEN
