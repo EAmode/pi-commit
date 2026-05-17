@@ -6,9 +6,33 @@ A [pi](https://github.com/earendil-works/pi-coding-agent) extension for generati
 
 ## Installation
 
+### From git
+
+Install directly from the Gitea git repository:
+
+```bash
+pi install git:git@dev.eamode.com:<owner>/pi-commit.git
+# or
+pi install https://dev.eamode.com/<owner>/pi-commit.git
+```
+
+For a project-local install that can be committed in `.pi/settings.json`:
+
+```bash
+pi install -l git:git@dev.eamode.com:<owner>/pi-commit.git
+```
+
+Use a ref to pin a version:
+
+```bash
+pi install git:git@dev.eamode.com:<owner>/pi-commit.git@v0.1.0
+```
+
+Replace `<owner>` with the Gitea user/org that owns the repository.
+
 ### From npm/Gitea package
 
-After publishing `@eamode/pi-commit` to the Gitea npm registry, configure npm for the scope:
+If the package is published to the Gitea npm registry, configure npm for the scope:
 
 ```bash
 npm login --scope=@eamode --registry=https://dev.eamode.com/api/packages/eamode/npm/
@@ -27,22 +51,6 @@ pi install -l npm:@eamode/pi-commit
 ```
 
 If your Gitea package owner is not `eamode`, replace `eamode` in the registry URL and package scope. See `.npmrc.example`.
-
-### From git
-
-You can also install directly from a Gitea git repository:
-
-```bash
-pi install git:git@dev.eamode.com:<owner>/pi-commit.git
-# or
-pi install https://dev.eamode.com/<owner>/pi-commit.git
-```
-
-Use a ref to pin a version:
-
-```bash
-pi install git:git@dev.eamode.com:<owner>/pi-commit.git@v0.1.0
-```
 
 ### Local development
 
@@ -138,7 +146,7 @@ Optional `.pi-commit.json` in the working directory:
 
 ```json
 {
-  "model": "anthropic/claude-haiku-4-5",
+  "model": "openai-codex/gpt-5.4-mini",
   "defaultMode": "staged",
   "recursive": true,
   "contextMode": "recent",
@@ -149,7 +157,20 @@ Optional `.pi-commit.json` in the working directory:
 }
 ```
 
-If no `model` is configured or passed with `--model`, the extension uses a deterministic fallback message instead of calling a model.
+Config keys:
+
+| Key | Values | Default | Description |
+| --- | --- | --- | --- |
+| `model` | pi model id, for example `openai-codex/gpt-5.4-mini` | unset | Model used to generate the commit message. Use `openai-codex/...` for ChatGPT Plus/Pro login, or `openai/...` only when an OpenAI API key is configured. If unset, or if generation fails, the extension uses a deterministic fallback message instead of calling a model. |
+| `defaultMode` | `"staged"` or `"all"` | `"staged"` | Change selection mode. `"staged"` commits only already staged changes. `"all"` stages tracked and untracked changes before committing. |
+| `recursive` | `true` or `false` | `true` | Whether to discover and commit dirty nested submodules before committing the parent repository. |
+| `contextMode` | `"none"`, `"recent"`, or `"session"` | `"recent"` | How much pi conversation context to include in commit-message generation. `"none"` includes no prompts, `"recent"` includes the latest user prompts, and `"session"` includes all available user prompts up to `maxContextBytes`. |
+| `recentPromptCount` | number | `5` | Number of recent user prompts to include when `contextMode` is `"recent"`. |
+| `maxContextBytes` | number | `8000` | Maximum size of conversation context passed to the message generator. |
+| `maxDiffBytes` | number | `30000` | Maximum size of staged diff passed to the message generator for each repository. |
+| `confirmBeforeCommit` | `true` or `false` | `true` | Whether to ask for confirmation before creating commits in interactive UI mode. Set to `false` to behave like `--yes`. |
+
+Command-line flags override config values for a single `/autocommit` run.
 
 ## Commit messages
 
