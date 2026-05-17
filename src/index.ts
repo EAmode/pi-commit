@@ -30,6 +30,7 @@ export default function (pi: ExtensionAPI) {
 			try {
 				const config = await loadConfig(ctx.cwd);
 				options = parseArgs(args, config);
+				options.model ??= currentModelId(ctx.model);
 			} catch (error) {
 				ctx.ui.notify(`autocommit: ${(error as Error).message}`, "error");
 				return;
@@ -128,6 +129,11 @@ async function loadConfig(cwd: string): Promise<PiCommitConfig> {
 		if (error?.code === "ENOENT") return {};
 		throw new Error(`Failed to read .pi-commit.json: ${error.message}`);
 	}
+}
+
+function currentModelId(model: any): string | undefined {
+	if (!model?.provider || !model?.id) return undefined;
+	return `${model.provider}/${model.id}`;
 }
 
 function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {

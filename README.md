@@ -2,7 +2,7 @@
 
 A [pi](https://github.com/earendil-works/pi-coding-agent) extension for generating automatic, changelog-friendly Conventional Commits from your repository changes.
 
-`/autocommit` inspects git changes, handles nested submodules, generates a commit message with an isolated cheap model when configured, and runs `git commit` with hooks enabled by default.
+`/autocommit` inspects git changes, handles nested submodules, generates a commit message with an isolated model, and runs `git commit` with hooks enabled by default.
 
 ## Installation
 
@@ -161,7 +161,7 @@ Config keys:
 
 | Key | Values | Default | Description |
 | --- | --- | --- | --- |
-| `model` | pi model id, for example `openai-codex/gpt-5.4-mini` | unset | Model used to generate the commit message. Use `openai-codex/...` for ChatGPT Plus/Pro login, or `openai/...` only when an OpenAI API key is configured. If unset, or if generation fails, the extension uses a deterministic fallback message instead of calling a model. |
+| `model` | pi model id, for example `openai-codex/gpt-5.4-mini` | current pi model | Model used to generate the commit message. Use `openai-codex/...` for ChatGPT Plus/Pro login, or `openai/...` only when an OpenAI API key is configured. If unset, `/autocommit` uses the current parent pi model. If no model is available, or if generation fails, the extension uses a deterministic fallback message. |
 | `defaultMode` | `"staged"` or `"all"` | `"staged"` | Change selection mode. `"staged"` commits only already staged changes. `"all"` stages tracked and untracked changes before committing. |
 | `recursive` | `true` or `false` | `true` | Whether to discover and commit dirty nested submodules before committing the parent repository. |
 | `contextMode` | `"none"`, `"recent"`, or `"session"` | `"recent"` | How much pi conversation context to include in commit-message generation. `"none"` includes no prompts, `"recent"` includes the latest user prompts, and `"session"` includes all available user prompts up to `maxContextBytes`. |
@@ -170,7 +170,7 @@ Config keys:
 | `maxDiffBytes` | number | `30000` | Maximum size of staged diff passed to the message generator for each repository. |
 | `confirmBeforeCommit` | `true` or `false` | `true` | Whether to ask for confirmation before creating commits in interactive UI mode. Set to `false` to behave like `--yes`. |
 
-Command-line flags override config values for a single `/autocommit` run.
+Command-line flags override config values for a single `/autocommit` run. Omit `model` to inherit the current parent pi model.
 
 ## Commit messages
 
