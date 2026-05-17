@@ -8,37 +8,29 @@ A [pi](https://github.com/earendil-works/pi-coding-agent) extension for generati
 
 ### From git
 
-Install directly from the Gitea git repository:
+Install directly from the GitHub repository:
 
 ```bash
-pi install git:git@dev.eamode.com:<owner>/pi-commit.git
+pi install git:https://github.com/EAmode/pi-commit.git
 # or
-pi install https://dev.eamode.com/<owner>/pi-commit.git
+pi install https://github.com/EAmode/pi-commit.git
 ```
 
 For a project-local install that can be committed in `.pi/settings.json`:
 
 ```bash
-pi install -l git:git@dev.eamode.com:<owner>/pi-commit.git
+pi install -l git:https://github.com/EAmode/pi-commit.git
 ```
 
 Use a ref to pin a version:
 
 ```bash
-pi install git:git@dev.eamode.com:<owner>/pi-commit.git@v0.1.0
+pi install git:https://github.com/EAmode/pi-commit.git@v0.1.0
 ```
 
-Replace `<owner>` with the Gitea user/org that owns the repository.
+### From npm
 
-### From npm/Gitea package
-
-If the package is published to the Gitea npm registry, configure npm for the scope:
-
-```bash
-npm login --scope=@eamode --registry=https://dev.eamode.com/api/packages/eamode/npm/
-```
-
-Then install the pi package:
+Install the pi package from npm:
 
 ```bash
 pi install npm:@eamode/pi-commit
@@ -49,8 +41,6 @@ For a project-local install that can be committed in `.pi/settings.json`:
 ```bash
 pi install -l npm:@eamode/pi-commit
 ```
-
-If your Gitea package owner is not `eamode`, replace `eamode` in the registry URL and package scope. See `.npmrc.example`.
 
 ### Local development
 
@@ -134,11 +124,41 @@ npm run typecheck
 npm run pack:dry-run
 ```
 
-Publish to the configured Gitea npm registry:
+## Release from local
 
-```bash
-npm publish
-```
+Releases are managed by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main` and publish to npmjs.
+
+Before releasing locally:
+
+1. Log in to npmjs for the `@eamode` scope:
+
+   ```bash
+   npm login --scope=@eamode --registry=https://registry.npmjs.org/
+   ```
+
+   Or export an npm automation token:
+
+   ```bash
+   export NPM_TOKEN=YOUR_NPM_TOKEN
+   ```
+
+2. Make sure `main` is clean and up to date:
+
+   ```bash
+   git checkout main
+   git pull --ff-only
+   npm ci
+   npm run typecheck
+   npm run release:dry-run
+   ```
+
+3. Publish from your machine:
+
+   ```bash
+   npm run release:local
+   ```
+
+`release:local` runs `semantic-release --no-ci`, computes the next version from commits, creates the git tag, and publishes `@eamode/pi-commit` to npm.
 
 ## Configuration
 

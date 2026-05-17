@@ -1,8 +1,10 @@
-# Gitea npm registry for this package.
-# Replace `eamode` with the Gitea user/org that owns the package if different.
-@eamode:registry=https://dev.eamode.com/api/packages/eamode/npm/
+# npmjs registry for this scoped public package.
+@eamode:registry=https://registry.npmjs.org/
 
-# For publishing or installing private packages, authenticate with one of:
-# npm login --scope=@eamode --registry=https://dev.eamode.com/api/packages/eamode/npm/
-# or add an auth token to your user-level ~/.npmrc:
-# //dev.eamode.com/api/packages/eamode/npm/:_authToken=YOUR_GITEA_TOKEN
+# For local semantic-release publishing, authenticate to npmjs first:
+# npm login --scope=@eamode --registry=https://registry.npmjs.org/
+#
+# Alternatively set an auth token in your shell for a single release:
+# NPM_TOKEN=YOUR_NPM_TOKEN npm run release:local
+#
+# Do not commit real auth tokens to this file.
