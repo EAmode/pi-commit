@@ -179,15 +179,16 @@ Generated messages use Conventional Commits and are optimized for future changel
 - accurate type selection, such as `feat`, `fix`, `refactor`, `docs`, or `chore`
 - meaningful scopes inferred from repo paths and changed files
 - subject usually under 90 characters, with a hard cap around 120
+- descriptive subject phrasing that states what changed, not imperative task wording
 - optional body when it clarifies motivation, behavior, or impact
 
 Example:
 
 ```txt
-feat(autocommit): generate commits across nested submodules
+feat(autocommit): nested submodule commits generated deepest-first
 
-Adds recursive dirty-repo discovery and commits submodules before the
-superproject so parent gitlink updates are captured correctly.
+Recursive dirty-repo discovery was added so submodules are committed before
+the superproject and parent gitlink updates are captured correctly.
 ```
 
 ## Git hooks

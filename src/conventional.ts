@@ -30,7 +30,7 @@ export function repairConventionalCommit(raw: string): string | null {
 
 export function fallbackMessage(changedFiles: string[], repoRelativePath: string): string {
 	const scope = inferScope(changedFiles, repoRelativePath);
-	return `chore${scope ? `(${scope})` : ""}: update repository changes`;
+	return `chore${scope ? `(${scope})` : ""}: repository changed`;
 }
 
 export function inferScope(changedFiles: string[], repoRelativePath: string): string {
