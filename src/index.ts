@@ -2,6 +2,7 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { extractRecentIntent } from "./context.js";
 import { isConventionalCommit } from "./conventional.js";
 import { collectChangeSet, commitRepo, discoverRepos, findGitRoot } from "./git.js";
@@ -9,7 +10,7 @@ import { generateCommitMessage } from "./message.js";
 import type { AutocommitOptions, CommitResult, PiCommitConfig, PlannedCommit } from "./types.js";
 
 const DEFAULT_OPTIONS: AutocommitOptions = {
-	stageMode: "staged",
+	stageMode: "all",
 	recursive: true,
 	dryRun: false,
 	noVerify: false,
@@ -124,11 +125,27 @@ async function loadConfig(cwd: string): Promise<PiCommitConfig> {
 	const configPath = path.join(cwd, ".pi-commit.json");
 	try {
 		const text = await fs.readFile(configPath, "utf8");
-		return JSON.parse(text) as PiCommitConfig;
+		const errors: ParseError[] = [];
+		const config = parse(text, errors, { allowTrailingComma: true });
+		if (errors.length > 0) {
+			throw new Error(formatJsoncErrors(text, errors));
+		}
+		return (config ?? {}) as PiCommitConfig;
 	} catch (error: any) {
 		if (error?.code === "ENOENT") return {};
 		throw new Error(`Failed to read .pi-commit.json: ${error.message}`);
 	}
+}
+
+function formatJsoncErrors(text: string, errors: ParseError[]): string {
+	return errors
+		.map((error) => {
+			const line = text.slice(0, error.offset).split(/\r?\n/).length;
+			const lineStart = Math.max(text.lastIndexOf("\n", error.offset - 1), text.lastIndexOf("\r", error.offset - 1)) + 1;
+			const column = error.offset - lineStart + 1;
+			return `${printParseErrorCode(error.error)} at ${line}:${column}`;
+		})
+		.join(", ");
 }
 
 function currentModelId(model: any): string | undefined {
@@ -219,7 +236,7 @@ function formatPlan(planned: PlannedCommit[], options: AutocommitOptions): strin
 	];
 	for (const item of planned) {
 		const conventional = isConventionalCommit(item.message) ? "" : " [fallback]";
-		lines.push(`${item.changeSet.repo.relativePath}${conventional}`);
+		lines.push(`${formatRepoLabel(item.changeSet.repo)}${conventional}`);
 		lines.push(indent(item.message, "  "));
 		if (item.changeSet.unstaged || item.changeSet.untracked.length > 0) {
 			lines.push("  note: unstaged/untracked changes remain outside this staged commit");
@@ -229,10 +246,16 @@ function formatPlan(planned: PlannedCommit[], options: AutocommitOptions): strin
 	return lines.join("\n").trimEnd();
 }
 
+function formatRepoLabel(repo: { path: string; relativePath: string }): string {
+	const repoName = path.basename(repo.path);
+	const repoPath = repo.relativePath === "." ? "./" : `${repo.relativePath}/`;
+	return `${repoPath} (${repoName})`;
+}
+
 function formatResults(results: CommitResult[]): string {
 	const lines = ["autocommit results", ""];
 	for (const result of results) {
-		lines.push(`${result.success ? "✓" : "✗"} ${result.repo.relativePath} (exit ${result.exitCode})`);
+		lines.push(`${result.success ? "✓" : "✗"} ${formatRepoLabel(result.repo)} (exit ${result.exitCode})`);
 		lines.push(indent(result.message, "  "));
 		const output = [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join("\n");
 		if (output) lines.push("", indent(output, "  "));

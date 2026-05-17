@@ -1,0 +1,25 @@
+{
+  // Model used to generate commit messages. Omit to inherit the current pi model.
+  "model": "openai-codex/gpt-5.4-mini",
+
+  // Change selection mode: "staged" commits only staged changes; "all" stages all changes first.
+  "defaultMode": "all",
+
+  // Discover and commit dirty nested submodules before committing the parent repository.
+  "recursive": true,
+
+  // Conversation context for message generation: "none", "recent", or "session".
+  "contextMode": "recent",
+
+  // Number of latest user prompts included when contextMode is "recent".
+  "recentPromptCount": 5,
+
+  // Maximum conversation context size passed to the message generator.
+  "maxContextBytes": 8000,
+
+  // Maximum staged diff size passed to the message generator for each repository.
+  "maxDiffBytes": 30000,
+
+  // Ask before creating commits in interactive UI mode. Set false to behave like --yes.
+  "confirmBeforeCommit": true
+}

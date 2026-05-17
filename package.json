@@ -1,6 +1,6 @@
 {
   "name": "@eamode/pi-commit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "pi extension for automatic changelog-friendly Conventional Commits with submodule support.",
   "type": "module",
   "license": "MIT",
@@ -19,7 +19,8 @@
     "extensions",
     "src",
     "README.md",
-    "plans"
+    "plans",
+    ".pi-commit.example.json"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -47,5 +48,8 @@
     "extensions": [
       "extensions/index.ts"
     ]
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1"
   }
 }
