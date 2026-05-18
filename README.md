@@ -1,6 +1,8 @@
 # pi-commit
 
-A [pi](https://github.com/earendil-works/pi-coding-agent) extension for automatic, changelog-friendly Conventional Commits.
+A [pi](https://github.com/earendil-works/pi) extension for automatic, changelog-friendly Conventional Commits.
+
+![pi-commit screenshot](assets/screenshot.png)
 
 `/autocommit` inspects git changes, commits dirty submodules deepest-first, generates a Conventional Commit message with an isolated model, previews/confirms in interactive mode, and runs `git commit` with hooks enabled by default.
 
