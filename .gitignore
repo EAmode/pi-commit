@@ -76,6 +76,9 @@ web_modules/
 # Local pi-commit configuration
 .pi-commit.json
 
+# Local planning notes
+plans/
+
 # dotenv environment variable files
 .env
 .env.development.local

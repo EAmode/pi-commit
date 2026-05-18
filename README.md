@@ -126,5 +126,3 @@ npm run release
 ```
 
 `npm run release` runs `semantic-release --no-ci`, computes the next version, creates the git tag, and publishes `@eamode/pi-commit`.
-
-See [`plans/autocommit-extension-plan.md`](plans/autocommit-extension-plan.md) for design notes.

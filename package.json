@@ -20,7 +20,6 @@
     "src",
     "assets",
     "README.md",
-    "plans",
     ".pi-commit.example.json"
   ],
   "scripts": {
