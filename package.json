@@ -47,7 +47,8 @@
   "pi": {
     "extensions": [
       "extensions/index.ts"
-    ]
+    ],
+    "image": "https://raw.githubusercontent.com/EAmode/pi-commit/main/assets/screenshot.png"
   },
   "dependencies": {
     "jsonc-parser": "^3.3.1"
