@@ -51,7 +51,7 @@ export default function (pi: ExtensionAPI) {
 						ctx.ui.notify(`Skipping detached submodule ${repo.relativePath}; checkout a branch first.`, "warning");
 						continue;
 					}
-					ctx.ui.setStatus("autocommit", `message ${repo.relativePath}`);
+					ctx.ui.setStatus("autocommit", `message ${formatRepoLabel(repo)}`);
 					const message = await generateCommitMessage({
 						changeSet,
 						recentIntent,
