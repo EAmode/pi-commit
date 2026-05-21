@@ -86,6 +86,12 @@ export async function collectChangeSet(
 	};
 }
 
+export async function stageSubmoduleGitlinks(pi: ExtensionAPI, repo: RepoInfo): Promise<ExecResult | null> {
+	const submodules = await listSubmodulePaths(pi, repo.path);
+	if (submodules.length === 0) return null;
+	return git(pi, repo.path, ["add", "--", ...submodules], 120000);
+}
+
 export async function commitRepo(
 	pi: ExtensionAPI,
 	repo: RepoInfo,
@@ -118,6 +124,19 @@ async function output(pi: ExtensionAPI, cwd: string, args: string[], timeout = 3
 async function listLines(pi: ExtensionAPI, cwd: string, args: string[]): Promise<string[]> {
 	const text = await output(pi, cwd, args);
 	return text.split("\n").map((line) => line.trim()).filter(Boolean);
+}
+
+async function listSubmodulePaths(pi: ExtensionAPI, cwd: string): Promise<string[]> {
+	const result = await git(pi, cwd, ["submodule", "status"]);
+	if (result.code !== 0) return [];
+	const paths: string[] = [];
+	for (const line of result.stdout.split("\n")) {
+		const trimmed = line.trim();
+		if (!trimmed) continue;
+		const match = trimmed.match(/^[ +-U]?[0-9a-f]{40}\s+([^\s]+)(?:\s|$)/i);
+		if (match) paths.push(normalizePath(match[1]));
+	}
+	return paths;
 }
 
 function normalizePath(value: string): string {

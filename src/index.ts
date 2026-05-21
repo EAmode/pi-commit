@@ -5,7 +5,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { extractRecentIntent } from "./context.js";
 import { isConventionalCommit } from "./conventional.js";
-import { collectChangeSet, commitRepo, discoverRepos, findGitRoot } from "./git.js";
+import { collectChangeSet, commitRepo, discoverRepos, findGitRoot, stageSubmoduleGitlinks } from "./git.js";
 import { generateCommitMessage } from "./message.js";
 import type { AutocommitOptions, CommitResult, PiCommitConfig, PlannedCommit } from "./types.js";
 
@@ -88,6 +88,13 @@ export default function (pi: ExtensionAPI) {
 				ctx.ui.setStatus("autocommit", "committing");
 				const results: CommitResult[] = [];
 				for (const item of planned) {
+					const gitlinkStage = await stageSubmoduleGitlinks(pi, item.changeSet.repo);
+					if (gitlinkStage && gitlinkStage.code !== 0) {
+						pi.sendMessage({ customType: "autocommit", content: formatResults(results), display: true });
+						ctx.ui.notify(`Failed to stage submodule gitlinks in ${item.changeSet.repo.relativePath}`, "error");
+						return;
+					}
+
 					const messageFile = await writeMessageFile(item.message);
 					try {
 						const result = await commitRepo(pi, item.changeSet.repo, messageFile, options.noVerify);
