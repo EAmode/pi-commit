@@ -38,6 +38,9 @@ Default behavior: `/autocommit --all --recursive --context recent`
 /autocommit --model <provider/model>
 /autocommit --model=<provider/model>
 /autocommit --context none|recent|session
+/autocommit --no-ai               # skip AI and use a deterministic fallback message
+/autocommit --message-timeout 15000
+/autocommit --max-diff-bytes 0    # omit full diffs from message generation
 /autocommit --yes                 # skip confirmation prompts
 ```
 
@@ -57,6 +60,10 @@ cp .pi-commit.example.json .pi-commit.json
 {
   // Model used to generate commit messages. Omit to inherit the current pi model.
   "model": "openai-codex/gpt-5.4-mini",
+  // Message generation: "ai" uses a model; "fallback" skips AI and uses changed-file heuristics.
+  "messageMode": "ai",
+  // Maximum time to wait for AI message generation before falling back. Set 0 to disable.
+  "messageTimeoutMs": 45000,
   // "staged" commits only staged changes; "all" stages all changes first.
   "defaultMode": "all",
   // Commit dirty nested submodules before the parent repository.
@@ -67,7 +74,7 @@ cp .pi-commit.example.json .pi-commit.json
   "recentPromptCount": 5,
   // Maximum conversation context size passed to the message generator.
   "maxContextBytes": 8000,
-  // Maximum staged diff size passed to the message generator for each repository.
+  // Maximum staged diff size passed to the message generator for each repository. Set 0 to omit full diffs.
   "maxDiffBytes": 30000,
   // Ask before creating commits in interactive UI mode. false behaves like --yes.
   "confirmBeforeCommit": true,
@@ -76,13 +83,15 @@ cp .pi-commit.example.json .pi-commit.json
 
 | Key | Values | Default | Description |
 | --- | --- | --- | --- |
-| `model` | pi model id, e.g. `openai-codex/gpt-5.4-mini` | current pi model | Model for commit-message generation. Use `openai-codex/...` for ChatGPT Plus/Pro login, or `openai/...` with an OpenAI API key. If unset, generation uses the current parent pi model; if unavailable or failed, a deterministic fallback message is used. |
+| `model` | pi model id, e.g. `openai-codex/gpt-5.4-mini` | current pi model | Model for commit-message generation. Use `openai-codex/...` for ChatGPT Plus/Pro login, or `openai/...` with an OpenAI API key. If unset, generation uses the current parent pi model; if unavailable, failed, or timed out, a deterministic fallback message is used. |
+| `messageMode` | `"ai"` or `"fallback"` | `"ai"` | `"fallback"` skips AI generation entirely and creates deterministic messages from the change set. |
+| `messageTimeoutMs` | number | `45000` | Maximum time to wait for AI message generation before falling back; `0` disables the timeout. |
 | `defaultMode` | `"staged"` or `"all"` | `"all"` | `"staged"` commits already staged changes; `"all"` stages tracked and untracked changes before committing. |
 | `recursive` | boolean | `true` | Commit dirty nested submodules before the parent repo. |
 | `contextMode` | `"none"`, `"recent"`, or `"session"` | `"recent"` | Prompt context included in generation; `"session"` uses all available user prompts up to `maxContextBytes`. |
 | `recentPromptCount` | number | `5` | Latest user prompts included when `contextMode` is `"recent"`. |
 | `maxContextBytes` | number | `8000` | Maximum conversation context passed to the generator. |
-| `maxDiffBytes` | number | `30000` | Maximum staged diff passed to the generator per repo. |
+| `maxDiffBytes` | number | `30000` | Maximum staged diff passed to the generator per repo; `0` omits full diffs and uses file names plus diff stat. |
 | `confirmBeforeCommit` | boolean | `true` | Ask before committing in interactive UI mode; `false` behaves like `--yes`. |
 
 ## Commit messages and submodules

@@ -67,10 +67,15 @@ export async function collectChangeSet(
 		? Array.from(new Set([...(await listLines(pi, repo.path, [...diffArgs, "--name-only"])), ...untracked]))
 		: await listLines(pi, repo.path, [...diffArgs, "--name-only"]);
 	const diffStat = await output(pi, repo.path, [...diffArgs, "--stat"]);
-	let diff = await output(pi, repo.path, [...diffArgs, "--", ...changedFiles.filter((file) => !untracked.includes(file)).slice(0, 50)], 120000);
-	if (dryRunAll && untracked.length > 0) diff += `\n\nUntracked files to be added:\n${untracked.map((f) => `- ${f}`).join("\n")}`;
-	if (diff.length > options.maxDiffBytes) {
-		diff = `${diff.slice(0, options.maxDiffBytes)}\n\n[diff truncated at ${options.maxDiffBytes} bytes]`;
+	let diff = "";
+	if (options.maxDiffBytes <= 0) {
+		diff = "[diff omitted by maxDiffBytes=0]";
+	} else {
+		diff = await output(pi, repo.path, [...diffArgs, "--", ...changedFiles.filter((file) => !untracked.includes(file)).slice(0, 50)], 120000);
+		if (dryRunAll && untracked.length > 0) diff += `\n\nUntracked files to be added:\n${untracked.map((f) => `- ${f}`).join("\n")}`;
+		if (diff.length > options.maxDiffBytes) {
+			diff = `${diff.slice(0, options.maxDiffBytes)}\n\n[diff truncated at ${options.maxDiffBytes} bytes]`;
+		}
 	}
 
 	return {

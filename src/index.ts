@@ -15,6 +15,8 @@ const DEFAULT_OPTIONS: AutocommitOptions = {
 	dryRun: false,
 	noVerify: false,
 	yes: false,
+	messageMode: "ai",
+	messageTimeoutMs: 45000,
 	contextMode: "recent",
 	recentPromptCount: 5,
 	maxContextBytes: 8000,
@@ -31,7 +33,7 @@ export default function (pi: ExtensionAPI) {
 			try {
 				const config = await loadConfig(ctx.cwd);
 				options = parseArgs(args, config);
-				options.model ??= currentModelId(ctx.model);
+				if (options.messageMode === "ai") options.model ??= currentModelId(ctx.model);
 			} catch (error) {
 				ctx.ui.notify(`autocommit: ${(error as Error).message}`, "error");
 				return;
@@ -41,7 +43,7 @@ export default function (pi: ExtensionAPI) {
 			try {
 				const root = await findGitRoot(pi, ctx.cwd);
 				const repos = await discoverRepos(pi, root, options.recursive);
-				const recentIntent = extractRecentIntent(ctx, options);
+				const recentIntent = options.messageMode === "ai" ? extractRecentIntent(ctx, options) : "";
 				const planned: PlannedCommit[] = [];
 
 				for (const repo of repos) {
@@ -55,7 +57,8 @@ export default function (pi: ExtensionAPI) {
 					const message = await generateCommitMessage({
 						changeSet,
 						recentIntent,
-						model: options.model,
+						model: options.messageMode === "ai" ? options.model : undefined,
+						messageTimeoutMs: options.messageTimeoutMs,
 						signal: ctx.signal,
 					});
 					planned.push({ changeSet, message });
@@ -166,6 +169,8 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 		stageMode: config.defaultMode ?? DEFAULT_OPTIONS.stageMode,
 		recursive: config.recursive ?? DEFAULT_OPTIONS.recursive,
 		model: config.model,
+		messageMode: config.messageMode ?? DEFAULT_OPTIONS.messageMode,
+		messageTimeoutMs: config.messageTimeoutMs ?? DEFAULT_OPTIONS.messageTimeoutMs,
 		contextMode: config.contextMode ?? DEFAULT_OPTIONS.contextMode,
 		recentPromptCount: config.recentPromptCount ?? DEFAULT_OPTIONS.recentPromptCount,
 		maxContextBytes: config.maxContextBytes ?? DEFAULT_OPTIONS.maxContextBytes,
@@ -207,6 +212,21 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 				break;
 			case "--model":
 				options.model = inlineValue ?? requireValue(tokens, ++i, "--model");
+				options.messageMode = "ai";
+				break;
+			case "--ai":
+				options.messageMode = "ai";
+				break;
+			case "--no-ai":
+			case "--fallback-message":
+				options.messageMode = "fallback";
+				break;
+			case "--message-timeout":
+			case "--message-timeout-ms":
+				options.messageTimeoutMs = parseNonNegativeInteger(inlineValue ?? requireValue(tokens, ++i, token), token);
+				break;
+			case "--max-diff-bytes":
+				options.maxDiffBytes = parseNonNegativeInteger(inlineValue ?? requireValue(tokens, ++i, "--max-diff-bytes"), "--max-diff-bytes");
 				break;
 			case "--context": {
 				const value = inlineValue ?? requireValue(tokens, ++i, "--context");
@@ -235,10 +255,16 @@ function requireValue(tokens: string[], index: number, flag: string): string {
 	return value;
 }
 
+function parseNonNegativeInteger(value: string, flag: string): number {
+	const parsed = Number(value);
+	if (!Number.isInteger(parsed) || parsed < 0) throw new Error(`${flag} must be a non-negative integer`);
+	return parsed;
+}
+
 function formatPlan(planned: PlannedCommit[], options: AutocommitOptions): string {
 	const lines = [
 		options.dryRun ? "autocommit dry run" : "autocommit plan",
-		`mode: ${options.stageMode}, recursive: ${options.recursive}, hooks: ${options.noVerify ? "disabled" : "enabled"}`,
+		`mode: ${options.stageMode}, recursive: ${options.recursive}, messages: ${options.messageMode}, hooks: ${options.noVerify ? "disabled" : "enabled"}`,
 		"",
 	];
 	for (const item of planned) {

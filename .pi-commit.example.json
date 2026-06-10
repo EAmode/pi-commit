@@ -2,6 +2,12 @@
   // Model used to generate commit messages. Omit to inherit the current pi model.
   "model": "openai-codex/gpt-5.4-mini",
 
+  // Message generation: "ai" uses a model; "fallback" skips AI and uses changed-file heuristics.
+  "messageMode": "ai",
+
+  // Maximum time to wait for AI message generation before falling back. Set 0 to disable.
+  "messageTimeoutMs": 45000,
+
   // Change selection mode: "staged" commits only staged changes; "all" stages all changes first.
   "defaultMode": "all",
 
@@ -17,7 +23,7 @@
   // Maximum conversation context size passed to the message generator.
   "maxContextBytes": 8000,
 
-  // Maximum staged diff size passed to the message generator for each repository.
+  // Maximum staged diff size passed to the message generator for each repository. Set 0 to omit full diffs.
   "maxDiffBytes": 30000,
 
   // Ask before creating commits in interactive UI mode. Set false to behave like --yes.

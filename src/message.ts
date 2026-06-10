@@ -10,13 +10,14 @@ export async function generateCommitMessage(input: {
 	changeSet: RepoChangeSet;
 	recentIntent: string;
 	model?: string;
+	messageTimeoutMs?: number;
 	signal?: AbortSignal;
 }): Promise<string> {
 	if (!input.model) return fallbackMessage(input.changeSet.changedFiles, input.changeSet.repo.relativePath);
 
 	const prompt = buildPrompt(input.changeSet, input.recentIntent);
 	try {
-		const raw = await runPiMessageGenerator(prompt, input.model, input.signal);
+		const raw = await runPiMessageGenerator(prompt, input.model, input.signal, input.messageTimeoutMs);
 		const repaired = repairConventionalCommit(raw);
 		return repaired ?? fallbackMessage(input.changeSet.changedFiles, input.changeSet.repo.relativePath);
 	} catch {
@@ -62,7 +63,7 @@ function buildPrompt(changeSet: RepoChangeSet, recentIntent: string): string {
 	].join("\n");
 }
 
-async function runPiMessageGenerator(prompt: string, model: string, signal?: AbortSignal): Promise<string> {
+async function runPiMessageGenerator(prompt: string, model: string, signal?: AbortSignal, timeoutMs?: number): Promise<string> {
 	const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "pi-autocommit-"));
 	const promptFile = path.join(tmp, "prompt.md");
 	await fs.writeFile(promptFile, prompt, "utf8");
@@ -87,6 +88,13 @@ async function runPiMessageGenerator(prompt: string, model: string, signal?: Abo
 			let stderr = "";
 			let finalText = "";
 			let buffer = "";
+			let timeout: NodeJS.Timeout | undefined;
+			let abort: (() => void) | undefined;
+
+			const cleanup = () => {
+				if (timeout) clearTimeout(timeout);
+				if (signal && abort) signal.removeEventListener("abort", abort);
+			};
 
 			const processLine = (line: string) => {
 				if (!line.trim()) return;
@@ -111,15 +119,28 @@ async function runPiMessageGenerator(prompt: string, model: string, signal?: Abo
 			proc.stderr.on("data", (data) => {
 				stderr += data.toString();
 			});
-			proc.on("error", reject);
+			proc.on("error", (error) => {
+				cleanup();
+				reject(error);
+			});
 			proc.on("close", (code) => {
+				cleanup();
 				if (buffer.trim()) processLine(buffer);
 				if (code !== 0) reject(new Error(stderr || stdout || `pi exited with ${code}`));
 				else resolve(finalText || stdout);
 			});
 
+			if (timeoutMs && timeoutMs > 0) {
+				timeout = setTimeout(() => {
+					cleanup();
+					proc.kill("SIGTERM");
+					reject(new Error(`message generation timed out after ${timeoutMs}ms`));
+				}, timeoutMs);
+			}
+
 			if (signal) {
-				const abort = () => {
+				abort = () => {
+					cleanup();
 					proc.kill("SIGTERM");
 					reject(new Error("message generation aborted"));
 				};
