@@ -2,7 +2,7 @@
 
 A [pi](https://github.com/earendil-works/pi) extension for automatic, changelog-friendly Conventional Commits.
 
-`/autocommit` inspects git changes, commits dirty submodules deepest-first, generates a Conventional Commit message with an isolated model, previews/confirms in interactive mode, and runs `git commit` with hooks enabled by default.
+`/autocommit` inspects git changes, commits dirty submodules deepest-first, generates a Conventional Commit message with the configured/current model, previews/confirms in interactive mode, and runs `git commit` with hooks enabled by default.
 
 <img src="assets/screenshot.png" alt="pi-commit screenshot" width="640">
 
@@ -40,7 +40,10 @@ Default behavior: `/autocommit --all --recursive --context recent`
 /autocommit --context none|recent|session
 /autocommit --no-ai               # skip AI and use a deterministic fallback message
 /autocommit --message-timeout 15000
+/autocommit --message-max-tokens 1024
+/autocommit --max-message-chars 600
 /autocommit --max-diff-bytes 0    # omit full diffs from message generation
+/autocommit --profile             # include timing breakdown
 /autocommit --yes                 # skip confirmation prompts
 ```
 
@@ -64,6 +67,10 @@ cp .pi-commit.example.json .pi-commit.json
   "messageMode": "ai",
   // Maximum time to wait for AI message generation before falling back. Set 0 to disable.
   "messageTimeoutMs": 45000,
+  // Maximum generated tokens for commit-message generation, including reasoning/thinking tokens.
+  "messageMaxTokens": 1024,
+  // Maximum final commit-message characters. Set 0 to disable AI shortening/post-processing.
+  "maxMessageChars": 600,
   // "staged" commits only staged changes; "all" stages all changes first.
   "defaultMode": "all",
   // Commit dirty nested submodules before the parent repository.
@@ -78,6 +85,8 @@ cp .pi-commit.example.json .pi-commit.json
   "maxDiffBytes": 30000,
   // Ask before creating commits in interactive UI mode. false behaves like --yes.
   "confirmBeforeCommit": true,
+  // Include a timing breakdown in autocommit output.
+  "profile": false,
 }
 ```
 
@@ -86,6 +95,8 @@ cp .pi-commit.example.json .pi-commit.json
 | `model` | pi model id, e.g. `openai-codex/gpt-5.4-mini` | current pi model | Model for commit-message generation. Use `openai-codex/...` for ChatGPT Plus/Pro login, or `openai/...` with an OpenAI API key. If unset, generation uses the current parent pi model; if unavailable, failed, or timed out, a deterministic fallback message is used. |
 | `messageMode` | `"ai"` or `"fallback"` | `"ai"` | `"fallback"` skips AI generation entirely and creates deterministic messages from the change set. |
 | `messageTimeoutMs` | number | `45000` | Maximum time to wait for AI message generation before falling back; `0` disables the timeout. |
+| `messageMaxTokens` | number | `1024` | Maximum generated tokens for each AI generation call, including reasoning/thinking tokens. |
+| `maxMessageChars` | number | `600` | Maximum final commit-message characters. If AI output exceeds this, pi-commit asks the model to shorten it and then enforces the limit locally; `0` disables this post-processing. |
 | `defaultMode` | `"staged"` or `"all"` | `"all"` | `"staged"` commits already staged changes; `"all"` stages tracked and untracked changes before committing. |
 | `recursive` | boolean | `true` | Commit dirty nested submodules before the parent repo. |
 | `contextMode` | `"none"`, `"recent"`, or `"session"` | `"recent"` | Prompt context included in generation; `"session"` uses all available user prompts up to `maxContextBytes`. |
@@ -93,6 +104,7 @@ cp .pi-commit.example.json .pi-commit.json
 | `maxContextBytes` | number | `8000` | Maximum conversation context passed to the generator. |
 | `maxDiffBytes` | number | `30000` | Maximum staged diff passed to the generator per repo; `0` omits full diffs and uses file names plus diff stat. |
 | `confirmBeforeCommit` | boolean | `true` | Ask before committing in interactive UI mode; `false` behaves like `--yes`. |
+| `profile` | boolean | `false` | Include a timing breakdown in autocommit output. Fallback reasons are shown whenever AI generation falls back. |
 
 ## Commit messages and submodules
 
@@ -123,7 +135,7 @@ npm run typecheck
 npm run pack:dry-run
 ```
 
-Releases use [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main` and publish to npmjs. Before releasing locally, log in to npmjs for `@eamode` or export `NPM_TOKEN`, ensure `main` is clean/up to date, then run:
+Releases use [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main` and publish to npmjs. `CHANGELOG.md` is maintained manually. Before releasing locally, log in to npmjs for `@eamode` or export `NPM_TOKEN`, ensure `main` is clean/up to date, then run:
 
 ```bash
 git checkout main

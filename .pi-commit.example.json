@@ -8,6 +8,12 @@
   // Maximum time to wait for AI message generation before falling back. Set 0 to disable.
   "messageTimeoutMs": 45000,
 
+  // Maximum generated tokens for commit-message generation, including reasoning/thinking tokens.
+  "messageMaxTokens": 1024,
+
+  // Maximum final commit-message characters. Set 0 to disable AI shortening/post-processing.
+  "maxMessageChars": 600,
+
   // Change selection mode: "staged" commits only staged changes; "all" stages all changes first.
   "defaultMode": "all",
 
@@ -27,5 +33,8 @@
   "maxDiffBytes": 30000,
 
   // Ask before creating commits in interactive UI mode. Set false to behave like --yes.
-  "confirmBeforeCommit": true
+  "confirmBeforeCommit": true,
+
+  // Include a timing breakdown in autocommit output.
+  "profile": false
 }
