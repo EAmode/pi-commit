@@ -228,7 +228,6 @@ async function completeWithTimeout(
 			headers: options.headers,
 			env: options.env,
 			maxTokens,
-			temperature: 0.2,
 			signal: controller.signal,
 			timeoutMs: options.messageTimeoutMs && options.messageTimeoutMs > 0 ? options.messageTimeoutMs : undefined,
 		});
