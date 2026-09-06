@@ -1,12 +1,12 @@
 {
   "name": "@eamode/pi-commit",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "pi extension for automatic changelog-friendly Conventional Commits with submodule support.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/EAmode/pi-commit.git"
+    "url": "git+ssh://git@github.com/EAmode/pi-commit.git"
   },
   "keywords": [
     "pi-package",
