@@ -38,8 +38,6 @@ Default behavior: `/autocommit --all --recursive`
 /autocommit --model <provider/model>
 /autocommit --model=<provider/model>
 /autocommit --message-timeout 15000
-/autocommit --message-max-tokens 1024
-/autocommit --max-message-chars 600
 /autocommit --max-diff-bytes 0    # omit full diffs from message generation
 /autocommit --profile             # include timing breakdown
 /autocommit --yes                 # skip confirmation prompts
@@ -63,10 +61,6 @@ cp .pi-commit.example.json .pi-commit.json
   "model": "openai-codex/gpt-5.4-mini",
   // Maximum time to wait for AI message generation before falling back. Set 0 to disable.
   "messageTimeoutMs": 45000,
-  // Maximum generated tokens for commit-message generation, including reasoning/thinking tokens.
-  "messageMaxTokens": 1024,
-  // Maximum final commit-message characters. Set 0 to disable AI shortening/post-processing.
-  "maxMessageChars": 600,
   // "staged" commits only staged changes; "all" stages all changes first.
   "defaultMode": "all",
   // Commit dirty nested submodules before the parent repository.
@@ -84,13 +78,13 @@ cp .pi-commit.example.json .pi-commit.json
 | --- | --- | --- | --- |
 | `model` | pi model id, e.g. `openai-codex/gpt-5.4-mini` | current pi model | Model for commit-message generation. Use `openai-codex/...` for ChatGPT Plus/Pro login, or `openai/...` with an OpenAI API key. If unset, generation uses the current parent pi model; if unavailable, failed, or timed out, a deterministic fallback message is used. |
 | `messageTimeoutMs` | number | `45000` | Maximum time to wait for AI message generation before falling back; `0` disables the timeout. |
-| `messageMaxTokens` | number | `1024` | Maximum generated tokens for each AI generation call, including reasoning/thinking tokens. |
-| `maxMessageChars` | number | `600` | Maximum final commit-message characters. If AI output exceeds this, pi-commit asks the model to shorten it and then enforces the limit locally; `0` disables this post-processing. |
 | `defaultMode` | `"staged"` or `"all"` | `"all"` | `"staged"` commits already staged changes; `"all"` stages tracked and untracked changes before committing. |
 | `recursive` | boolean | `true` | Commit dirty nested submodules before the parent repo. |
 | `maxDiffBytes` | number | `30000` | Maximum staged diff passed to the generator per repo; `0` omits full diffs and uses file names plus diff stat. |
 | `confirmBeforeCommit` | boolean | `true` | Ask before committing in interactive UI mode; `false` behaves like `--yes`. |
 | `profile` | boolean | `false` | Include a timing breakdown in autocommit output. Fallback reasons are shown whenever AI generation falls back. |
+
+Generation uses provider/SDK token defaults. There is no total message character cap or shortening pass; `messageTimeoutMs` still controls the timeout.
 
 ## Commit messages and submodules
 

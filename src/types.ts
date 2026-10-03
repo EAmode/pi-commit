@@ -9,8 +9,6 @@ export interface AutocommitOptions {
 	yes: boolean;
 	model?: string;
 	messageTimeoutMs: number;
-	messageMaxTokens: number;
-	maxMessageChars: number;
 	maxDiffBytes: number;
 	profile: boolean;
 }
@@ -18,8 +16,6 @@ export interface AutocommitOptions {
 export interface PiCommitConfig {
 	model?: string;
 	messageTimeoutMs?: number;
-	messageMaxTokens?: number;
-	maxMessageChars?: number;
 	defaultMode?: StageMode;
 	recursive?: boolean;
 	maxDiffBytes?: number;

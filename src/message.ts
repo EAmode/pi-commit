@@ -2,8 +2,6 @@ import { complete, type Api, type AssistantMessage, type Model, type ProviderEnv
 import type { MessageGenerationResult, RepoChangeSet } from "./types.js";
 import { cleanModelMessage, fallbackMessage, repairConventionalCommit } from "./conventional.js";
 
-const DEFAULT_MESSAGE_MAX_TOKENS = 1024;
-
 export interface MessageGeneratorContext {
 	model?: Model<Api>;
 	modelLabel?: string;
@@ -24,8 +22,6 @@ export async function generateCommitMessage(input: {
 	changeSet: RepoChangeSet;
 	generator: MessageGeneratorContext;
 	messageTimeoutMs?: number;
-	messageMaxTokens?: number;
-	maxMessageChars?: number;
 	signal?: AbortSignal;
 }): Promise<MessageGenerationResult> {
 	if (!input.generator.model) {
@@ -33,7 +29,7 @@ export async function generateCommitMessage(input: {
 	}
 
 	const context: TextOnlyContext = {
-		systemPrompt: buildSystemPrompt(input.maxMessageChars),
+		systemPrompt: buildSystemPrompt(),
 		messages: [
 			{
 				role: "user",
@@ -49,7 +45,6 @@ export async function generateCommitMessage(input: {
 			headers: input.generator.auth?.headers,
 			env: input.generator.auth?.env,
 			messageTimeoutMs: input.messageTimeoutMs,
-			maxTokens: input.messageMaxTokens,
 			signal: input.signal,
 		});
 
@@ -67,16 +62,8 @@ export async function generateCommitMessage(input: {
 
 		const repaired = repairConventionalCommit(raw);
 		if (repaired) {
-			const message = await shortenCommitMessageIfNeeded({
-				message: repaired,
-				maxMessageChars: input.maxMessageChars,
-				generator: input.generator,
-				messageTimeoutMs: input.messageTimeoutMs,
-				messageMaxTokens: input.messageMaxTokens,
-				signal: input.signal,
-			});
 			return {
-				message,
+				message: repaired,
 				source: "ai",
 				model: input.generator.modelLabel,
 			};
@@ -91,10 +78,7 @@ export async function generateCommitMessage(input: {
 	}
 }
 
-function buildSystemPrompt(maxMessageChars?: number): string {
-	const lengthRule = maxMessageChars && maxMessageChars > 0
-		? [`- Keep the complete commit message at or below ${maxMessageChars} characters. If needed, omit the body.`]
-		: [];
+function buildSystemPrompt(): string {
 	return [
 		"You generate high-quality Conventional Commit messages.",
 		"",
@@ -108,7 +92,6 @@ function buildSystemPrompt(maxMessageChars?: number): string {
 		"- Use Conventional Commits: <type>(<scope>): <description>.",
 		"- Allowed types: feat, fix, refactor, docs, test, chore, build, ci, perf, style.",
 		"- Subject should usually be <= 90 chars and never exceed 120.",
-		...lengthRule,
 		"- Describe what changed, not an instruction or task title.",
 		"- Prefer past-tense or result-oriented phrasing (for example: 'parent model inheritance added', 'README config docs updated').",
 		"- Avoid imperative task verbs like add, update, fix, implement, or inherit as the first word of the subject.",
@@ -135,71 +118,6 @@ function buildUserPrompt(changeSet: RepoChangeSet): string {
 	].join("\n");
 }
 
-async function shortenCommitMessageIfNeeded(input: {
-	message: string;
-	maxMessageChars?: number;
-	generator: MessageGeneratorContext;
-	messageTimeoutMs?: number;
-	messageMaxTokens?: number;
-	signal?: AbortSignal;
-}): Promise<string> {
-	const maxMessageChars = input.maxMessageChars ?? 0;
-	if (maxMessageChars <= 0 || input.message.length <= maxMessageChars || !input.generator.model) {
-		return input.message;
-	}
-
-	const context: TextOnlyContext = {
-		systemPrompt: buildShortenSystemPrompt(maxMessageChars),
-		messages: [
-			{
-				role: "user",
-				content: [
-					`Shorten this Conventional Commit message to at most ${maxMessageChars} characters total.`,
-					"Preserve the type/scope and the user-visible meaning.",
-					"If the body does not fit, omit it.",
-					"Output only the shortened commit message.",
-					"",
-					"Commit message:",
-					input.message,
-				].join("\n"),
-				timestamp: Date.now(),
-			},
-		],
-	};
-
-	try {
-		const response = await completeWithTimeout(input.generator.model, context, {
-			apiKey: input.generator.auth?.apiKey,
-			headers: input.generator.auth?.headers,
-			env: input.generator.auth?.env,
-			messageTimeoutMs: input.messageTimeoutMs,
-			maxTokens: input.messageMaxTokens,
-			signal: input.signal,
-		});
-		const shortened = repairConventionalCommit(extractText(response));
-		if (shortened) return enforceMaxMessageChars(shortened, maxMessageChars);
-	} catch {
-		// Keep the original AI message and enforce the configured length locally below.
-	}
-
-	return enforceMaxMessageChars(input.message, maxMessageChars);
-}
-
-function buildShortenSystemPrompt(maxMessageChars: number): string {
-	return [
-		"You shorten Conventional Commit messages.",
-		"Output only one valid Conventional Commit message.",
-		"Do not output reasoning, explanations, or alternatives.",
-		"",
-		"Rules:",
-		"- Preserve the existing Conventional Commit type and scope when possible.",
-		"- Preserve the user-visible meaning.",
-		`- Keep the complete commit message at or below ${maxMessageChars} characters.`,
-		"- If a body does not fit, omit it.",
-		"- The first line must remain: <type>(<scope>): <description>.",
-	].join("\n");
-}
-
 async function completeWithTimeout(
 	model: Model<Api>,
 	context: TextOnlyContext,
@@ -208,7 +126,6 @@ async function completeWithTimeout(
 		headers?: ProviderHeaders;
 		env?: ProviderEnv;
 		messageTimeoutMs?: number;
-		maxTokens?: number;
 		signal?: AbortSignal;
 	},
 ): Promise<AssistantMessage> {
@@ -218,12 +135,10 @@ async function completeWithTimeout(
 	let abort: (() => void) | undefined;
 
 	try {
-		const maxTokens = options.maxTokens && options.maxTokens > 0 ? options.maxTokens : DEFAULT_MESSAGE_MAX_TOKENS;
 		const completion = complete(model, context, {
 			apiKey: options.apiKey,
 			headers: options.headers,
 			env: options.env,
-			maxTokens,
 			signal: controller.signal,
 			timeoutMs: options.messageTimeoutMs && options.messageTimeoutMs > 0 ? options.messageTimeoutMs : undefined,
 		});
@@ -293,37 +208,6 @@ function fallback(changeSet: RepoChangeSet, fallbackReason: string): MessageGene
 		source: "fallback",
 		fallbackReason,
 	};
-}
-
-function enforceMaxMessageChars(message: string, maxChars: number): string {
-	const clean = cleanModelMessage(message);
-	if (maxChars <= 0 || clean.length <= maxChars) return clean;
-
-	const [header, ...bodyLines] = clean.split("\n");
-	if (header.length >= maxChars) return shortenHeader(header, maxChars);
-
-	const body = bodyLines.join("\n").trim();
-	if (!body) return header;
-
-	const remaining = maxChars - header.length - 2;
-	if (remaining <= 0) return header;
-	return `${header}\n\n${truncateText(body, remaining)}`;
-}
-
-function shortenHeader(header: string, maxChars: number): string {
-	if (maxChars <= 0 || header.length <= maxChars) return header;
-	const match = header.match(/^((?:feat|fix|refactor|docs|test|chore|build|ci|perf|style)(?:\([^\r\n)]+\))?!?: )(.*)$/);
-	if (!match) return truncateText(header, maxChars);
-
-	const [, prefix, subject] = match;
-	if (prefix.length >= maxChars) return truncateText(header, maxChars);
-	return `${prefix}${truncateText(subject, maxChars - prefix.length)}`;
-}
-
-function truncateText(value: string, maxChars: number): string {
-	if (maxChars <= 0 || value.length <= maxChars) return value;
-	if (maxChars <= 3) return value.slice(0, maxChars);
-	return `${value.slice(0, maxChars - 3).trimEnd()}...`;
 }
 
 function truncateReason(value: string): string {

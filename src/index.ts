@@ -17,8 +17,6 @@ const DEFAULT_OPTIONS: AutocommitOptions = {
 	noVerify: false,
 	yes: false,
 	messageTimeoutMs: 45000,
-	messageMaxTokens: 1024,
-	maxMessageChars: 600,
 	maxDiffBytes: 30000,
 	profile: false,
 };
@@ -64,8 +62,6 @@ export default function (pi: ExtensionAPI) {
 							changeSet,
 							generator: messageGenerator!,
 							messageTimeoutMs: options!.messageTimeoutMs,
-							messageMaxTokens: options!.messageMaxTokens,
-							maxMessageChars: options!.maxMessageChars,
 							signal: ctx.signal,
 						}),
 					);
@@ -241,8 +237,6 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 		recursive: config.recursive ?? DEFAULT_OPTIONS.recursive,
 		model: config.model,
 		messageTimeoutMs: config.messageTimeoutMs ?? DEFAULT_OPTIONS.messageTimeoutMs,
-		messageMaxTokens: config.messageMaxTokens ?? DEFAULT_OPTIONS.messageMaxTokens,
-		maxMessageChars: config.maxMessageChars ?? DEFAULT_OPTIONS.maxMessageChars,
 		maxDiffBytes: config.maxDiffBytes ?? DEFAULT_OPTIONS.maxDiffBytes,
 		yes: config.confirmBeforeCommit === false,
 		profile: config.profile ?? DEFAULT_OPTIONS.profile,
@@ -292,14 +286,6 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 			case "--message-timeout":
 			case "--message-timeout-ms":
 				options.messageTimeoutMs = parseNonNegativeInteger(inlineValue ?? requireValue(tokens, ++i, token), token);
-				break;
-			case "--message-max-tokens":
-			case "--max-message-tokens":
-				options.messageMaxTokens = parseNonNegativeInteger(inlineValue ?? requireValue(tokens, ++i, token), token);
-				break;
-			case "--max-message-chars":
-			case "--message-max-chars":
-				options.maxMessageChars = parseNonNegativeInteger(inlineValue ?? requireValue(tokens, ++i, token), token);
 				break;
 			case "--max-diff-bytes":
 				options.maxDiffBytes = parseNonNegativeInteger(inlineValue ?? requireValue(tokens, ++i, "--max-diff-bytes"), "--max-diff-bytes");
