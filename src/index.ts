@@ -12,13 +12,13 @@ import type { AutocommitOptions, CommitResult, PiCommitConfig, PlannedCommit } f
 
 const DEFAULT_OPTIONS: AutocommitOptions = {
 	stageMode: "all",
-	recursive: true,
 	dryRun: false,
 	noVerify: false,
 	yes: false,
 	messageTimeoutMs: 45000,
 	maxDiffBytes: 30000,
 	profile: false,
+	thinkingLevel: "off",
 };
 
 export default function (pi: ExtensionAPI) {
@@ -43,7 +43,7 @@ export default function (pi: ExtensionAPI) {
 
 				ctx.ui.setStatus("autocommit", "planning");
 				const root = await profile.measure("find git root", () => findGitRoot(pi, ctx.cwd));
-				const repos = await profile.measure("discover repositories", () => discoverRepos(pi, root, options!.recursive));
+				const repos = await profile.measure("discover repositories", () => discoverRepos(pi, root));
 				let messageGenerator: MessageGeneratorContext | undefined;
 				const planned: PlannedCommit[] = [];
 
@@ -62,6 +62,7 @@ export default function (pi: ExtensionAPI) {
 							changeSet,
 							generator: messageGenerator!,
 							messageTimeoutMs: options!.messageTimeoutMs,
+							thinkingLevel: options!.thinkingLevel,
 							signal: ctx.signal,
 						}),
 					);
@@ -234,12 +235,12 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 	const options: AutocommitOptions = {
 		...DEFAULT_OPTIONS,
 		stageMode: config.defaultMode ?? DEFAULT_OPTIONS.stageMode,
-		recursive: config.recursive ?? DEFAULT_OPTIONS.recursive,
 		model: config.model,
 		messageTimeoutMs: config.messageTimeoutMs ?? DEFAULT_OPTIONS.messageTimeoutMs,
 		maxDiffBytes: config.maxDiffBytes ?? DEFAULT_OPTIONS.maxDiffBytes,
 		yes: config.confirmBeforeCommit === false,
 		profile: config.profile ?? DEFAULT_OPTIONS.profile,
+		thinkingLevel: config.thinkingLevel ?? DEFAULT_OPTIONS.thinkingLevel,
 	};
 
 	const tokens = tokenize(rawArgs || "");
@@ -258,12 +259,7 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 			case "--all":
 				options.stageMode = "all";
 				break;
-			case "--recursive":
-				options.recursive = true;
-				break;
-			case "--no-recursive":
-				options.recursive = false;
-				break;
+
 			case "--dry-run":
 				options.dryRun = true;
 				break;
@@ -290,6 +286,9 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 			case "--max-diff-bytes":
 				options.maxDiffBytes = parseNonNegativeInteger(inlineValue ?? requireValue(tokens, ++i, "--max-diff-bytes"), "--max-diff-bytes");
 				break;
+			case "--thinking-level":
+				options.thinkingLevel = parseThinkingLevel(inlineValue ?? requireValue(tokens, ++i, token), token);
+				break;
 			default:
 				throw new Error(`Unknown option: ${token}`);
 		}
@@ -315,10 +314,19 @@ function parseNonNegativeInteger(value: string, flag: string): number {
 	return parsed;
 }
 
+const VALID_THINKING_LEVELS = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
+
+function parseThinkingLevel(value: string, flag: string): AutocommitOptions["thinkingLevel"] {
+	if (!VALID_THINKING_LEVELS.has(value)) {
+		throw new Error(`${flag} must be one of: off, minimal, low, medium, high, xhigh, max`);
+	}
+	return value as AutocommitOptions["thinkingLevel"];
+}
+
 function formatPlan(planned: PlannedCommit[], options: AutocommitOptions): string {
 	const lines = [
 		options.dryRun ? "autocommit dry run" : "autocommit plan",
-		`mode: ${options.stageMode}, recursive: ${options.recursive}, hooks: ${options.noVerify ? "disabled" : "enabled"}`,
+		`mode: ${options.stageMode}, recursive, hooks: ${options.noVerify ? "disabled" : "enabled"}`,
 		"",
 	];
 	for (const item of planned) {

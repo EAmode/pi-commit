@@ -19,9 +19,8 @@ export async function findGitRoot(pi: ExtensionAPI, cwd: string): Promise<string
 	return path.resolve(result.stdout.trim());
 }
 
-export async function discoverRepos(pi: ExtensionAPI, root: string, recursive: boolean): Promise<RepoInfo[]> {
+export async function discoverRepos(pi: ExtensionAPI, root: string): Promise<RepoInfo[]> {
 	const repos: RepoInfo[] = [{ path: root, relativePath: ".", depth: 0, isRoot: true }];
-	if (!recursive) return repos;
 
 	const result = await git(pi, root, ["submodule", "status", "--recursive"]);
 	if (result.code !== 0) return repos;

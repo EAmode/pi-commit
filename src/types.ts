@@ -1,9 +1,10 @@
+import type { ModelThinkingLevel } from "@earendil-works/pi-ai/compat";
+
 export type StageMode = "staged" | "all";
 export type MessageSource = "ai" | "fallback";
 
 export interface AutocommitOptions {
 	stageMode: StageMode;
-	recursive: boolean;
 	dryRun: boolean;
 	noVerify: boolean;
 	yes: boolean;
@@ -11,16 +12,17 @@ export interface AutocommitOptions {
 	messageTimeoutMs: number;
 	maxDiffBytes: number;
 	profile: boolean;
+	thinkingLevel?: ModelThinkingLevel;
 }
 
 export interface PiCommitConfig {
 	model?: string;
 	messageTimeoutMs?: number;
 	defaultMode?: StageMode;
-	recursive?: boolean;
 	maxDiffBytes?: number;
 	confirmBeforeCommit?: boolean;
 	profile?: boolean;
+	thinkingLevel?: ModelThinkingLevel;
 }
 
 export interface RepoInfo {

@@ -1,4 +1,4 @@
-import { complete, type Api, type AssistantMessage, type Model, type ProviderEnv, type ProviderHeaders } from "@earendil-works/pi-ai/compat";
+import { completeSimple, type Api, type AssistantMessage, type Model, type ModelThinkingLevel, type ProviderEnv, type ProviderHeaders } from "@earendil-works/pi-ai/compat";
 import type { MessageGenerationResult, RepoChangeSet } from "./types.js";
 import { cleanModelMessage, fallbackMessage, repairConventionalCommit } from "./conventional.js";
 
@@ -22,6 +22,7 @@ export async function generateCommitMessage(input: {
 	changeSet: RepoChangeSet;
 	generator: MessageGeneratorContext;
 	messageTimeoutMs?: number;
+	thinkingLevel?: ModelThinkingLevel;
 	signal?: AbortSignal;
 }): Promise<MessageGenerationResult> {
 	if (!input.generator.model) {
@@ -45,6 +46,7 @@ export async function generateCommitMessage(input: {
 			headers: input.generator.auth?.headers,
 			env: input.generator.auth?.env,
 			messageTimeoutMs: input.messageTimeoutMs,
+			thinkingLevel: input.thinkingLevel,
 			signal: input.signal,
 		});
 
@@ -126,6 +128,7 @@ async function completeWithTimeout(
 		headers?: ProviderHeaders;
 		env?: ProviderEnv;
 		messageTimeoutMs?: number;
+		thinkingLevel?: ModelThinkingLevel;
 		signal?: AbortSignal;
 	},
 ): Promise<AssistantMessage> {
@@ -135,12 +138,13 @@ async function completeWithTimeout(
 	let abort: (() => void) | undefined;
 
 	try {
-		const completion = complete(model, context, {
+		const completion = completeSimple(model, context, {
 			apiKey: options.apiKey,
 			headers: options.headers,
 			env: options.env,
 			signal: controller.signal,
 			timeoutMs: options.messageTimeoutMs && options.messageTimeoutMs > 0 ? options.messageTimeoutMs : undefined,
+			...(options.thinkingLevel && options.thinkingLevel !== "off" ? { reasoning: options.thinkingLevel } : {}),
 		});
 		const races: Array<Promise<AssistantMessage>> = [completion];
 

@@ -26,13 +26,11 @@ Reload pi if it is already running:
 /autocommit
 ```
 
-Default behavior: `/autocommit --all --recursive`
+Default behavior: `/autocommit --all`
 
 ```txt
 /autocommit --staged              # commit only staged changes
 /autocommit --all                 # stage all changes before committing
-/autocommit --recursive           # include nested submodules
-/autocommit --no-recursive        # only commit the current/root repo
 /autocommit --dry-run             # preview without staging or committing
 /autocommit --no-verify           # bypass git hooks intentionally
 /autocommit --model <provider/model>
@@ -41,6 +39,7 @@ Default behavior: `/autocommit --all --recursive`
 /autocommit --max-diff-bytes 0    # omit full diffs from message generation
 /autocommit --profile             # include timing breakdown
 /autocommit --yes                 # skip confirmation prompts
+/autocommit --thinking-level high # set model thinking effort
 ```
 
 If hooks fail, `/autocommit` stops and shows their output. Use `--no-verify` only when you intentionally want to bypass hooks.
@@ -63,14 +62,15 @@ cp .pi-commit.example.json .pi-commit.json
   "messageTimeoutMs": 45000,
   // "staged" commits only staged changes; "all" stages all changes first.
   "defaultMode": "all",
-  // Commit dirty nested submodules before the parent repository.
-  "recursive": true,
   // Maximum staged diff size passed to the message generator for each repository. Set 0 to omit full diffs.
   "maxDiffBytes": 30000,
   // Ask before creating commits in interactive UI mode. false behaves like --yes.
   "confirmBeforeCommit": true,
   // Include a timing breakdown in autocommit output.
   "profile": false,
+  // Thinking/reasoning effort for the model. "off" disables thinking (fastest/cheapest).
+  // Use "low"-"max" for more deliberate message generation.
+  "thinkingLevel": "off",
 }
 ```
 
@@ -79,10 +79,10 @@ cp .pi-commit.example.json .pi-commit.json
 | `model` | pi model id, e.g. `openai-codex/gpt-5.4-mini` | current pi model | Model for commit-message generation. Use `openai-codex/...` for ChatGPT Plus/Pro login, or `openai/...` with an OpenAI API key. If unset, generation uses the current parent pi model; if unavailable, failed, or timed out, a deterministic fallback message is used. |
 | `messageTimeoutMs` | number | `45000` | Maximum time to wait for AI message generation before falling back; `0` disables the timeout. |
 | `defaultMode` | `"staged"` or `"all"` | `"all"` | `"staged"` commits already staged changes; `"all"` stages tracked and untracked changes before committing. |
-| `recursive` | boolean | `true` | Commit dirty nested submodules before the parent repo. |
 | `maxDiffBytes` | number | `30000` | Maximum staged diff passed to the generator per repo; `0` omits full diffs and uses file names plus diff stat. |
 | `confirmBeforeCommit` | boolean | `true` | Ask before committing in interactive UI mode; `false` behaves like `--yes`. |
 | `profile` | boolean | `false` | Include a timing breakdown in autocommit output. Fallback reasons are shown whenever AI generation falls back. |
+| `thinkingLevel` | `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, `"max"` | `"off"` | Thinking/reasoning effort for the model. `"off"` disables extended thinking for fastest, cheapest generation. Higher levels make the model reason more before composing the commit message, which can improve quality for complex changes but increases token usage and latency. |
 
 Generation uses provider/SDK token defaults. There is no total message character cap or shortening pass; `messageTimeoutMs` still controls the timeout.
 

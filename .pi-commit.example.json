@@ -8,9 +8,6 @@
   // Change selection mode: "staged" commits only staged changes; "all" stages all changes first.
   "defaultMode": "all",
 
-  // Discover and commit dirty nested submodules before committing the parent repository.
-  "recursive": true,
-
   // Maximum staged diff size passed to the message generator for each repository. Set 0 to omit full diffs.
   "maxDiffBytes": 30000,
 
@@ -18,5 +15,9 @@
   "confirmBeforeCommit": true,
 
   // Include a timing breakdown in autocommit output.
-  "profile": false
+  "profile": false,
+
+  // Thinking/reasoning effort for the model. "off" disables thinking (fastest/cheapest).
+  // Use "low"-"max" for more deliberate message generation. Values: off, minimal, low, medium, high, xhigh, max.
+  "thinkingLevel": "off"
 }
