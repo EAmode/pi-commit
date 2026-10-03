@@ -1,5 +1,3 @@
-export type ContextMode = "none" | "recent" | "session";
-export type MessageMode = "ai" | "fallback";
 export type StageMode = "staged" | "all";
 export type MessageSource = "ai" | "fallback";
 
@@ -10,28 +8,20 @@ export interface AutocommitOptions {
 	noVerify: boolean;
 	yes: boolean;
 	model?: string;
-	messageMode: MessageMode;
 	messageTimeoutMs: number;
 	messageMaxTokens: number;
 	maxMessageChars: number;
-	contextMode: ContextMode;
-	recentPromptCount: number;
-	maxContextBytes: number;
 	maxDiffBytes: number;
 	profile: boolean;
 }
 
 export interface PiCommitConfig {
 	model?: string;
-	messageMode?: MessageMode;
 	messageTimeoutMs?: number;
 	messageMaxTokens?: number;
 	maxMessageChars?: number;
 	defaultMode?: StageMode;
 	recursive?: boolean;
-	contextMode?: ContextMode;
-	recentPromptCount?: number;
-	maxContextBytes?: number;
 	maxDiffBytes?: number;
 	confirmBeforeCommit?: boolean;
 	profile?: boolean;

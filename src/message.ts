@@ -22,7 +22,6 @@ type TextOnlyContext = {
 
 export async function generateCommitMessage(input: {
 	changeSet: RepoChangeSet;
-	recentIntent: string;
 	generator: MessageGeneratorContext;
 	messageTimeoutMs?: number;
 	messageMaxTokens?: number;
@@ -38,7 +37,7 @@ export async function generateCommitMessage(input: {
 		messages: [
 			{
 				role: "user",
-				content: buildUserPrompt(input.changeSet, input.recentIntent),
+				content: buildUserPrompt(input.changeSet),
 				timestamp: Date.now(),
 			},
 		],
@@ -99,7 +98,7 @@ function buildSystemPrompt(maxMessageChars?: number): string {
 	return [
 		"You generate high-quality Conventional Commit messages.",
 		"",
-		"Use the git changes plus recent user intent to infer the essence of the change.",
+		"Infer the intent and essence of the change from the git changes alone.",
 		"Optimize for future changelog generation.",
 		"",
 		"Output only the commit message.",
@@ -120,13 +119,10 @@ function buildSystemPrompt(maxMessageChars?: number): string {
 	].join("\n");
 }
 
-function buildUserPrompt(changeSet: RepoChangeSet, recentIntent: string): string {
+function buildUserPrompt(changeSet: RepoChangeSet): string {
 	return [
 		`Repository: ${changeSet.repo.relativePath}`,
 		`Branch: ${changeSet.branch}${changeSet.detached ? " (detached HEAD)" : ""}`,
-		"",
-		"Recent user intent:",
-		recentIntent || "(none provided)",
 		"",
 		"Changed files:",
 		changeSet.changedFiles.map((file) => `- ${file}`).join("\n") || "(none)",

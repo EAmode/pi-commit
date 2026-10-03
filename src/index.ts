@@ -5,7 +5,6 @@ import { performance } from "node:perf_hooks";
 import type { Api, Model } from "@earendil-works/pi-ai/compat";
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
-import { extractRecentIntent } from "./context.js";
 import { isConventionalCommit } from "./conventional.js";
 import { collectChangeSet, commitRepo, discoverRepos, findGitRoot, stageSubmoduleGitlinks } from "./git.js";
 import { generateCommitMessage, type MessageGeneratorContext } from "./message.js";
@@ -17,13 +16,9 @@ const DEFAULT_OPTIONS: AutocommitOptions = {
 	dryRun: false,
 	noVerify: false,
 	yes: false,
-	messageMode: "ai",
 	messageTimeoutMs: 45000,
 	messageMaxTokens: 1024,
 	maxMessageChars: 600,
-	contextMode: "recent",
-	recentPromptCount: 5,
-	maxContextBytes: 8000,
 	maxDiffBytes: 30000,
 	profile: false,
 };
@@ -42,7 +37,7 @@ export default function (pi: ExtensionAPI) {
 					const config = await loadConfig(ctx.cwd);
 					profileEnabled = config.profile ?? profileEnabled;
 					options = parseArgs(args, config);
-					if (options.messageMode === "ai") options.model ??= currentModelId(ctx.model);
+					options.model ??= currentModelId(ctx.model);
 					profileEnabled = options.profile;
 				});
 
@@ -51,9 +46,6 @@ export default function (pi: ExtensionAPI) {
 				ctx.ui.setStatus("autocommit", "planning");
 				const root = await profile.measure("find git root", () => findGitRoot(pi, ctx.cwd));
 				const repos = await profile.measure("discover repositories", () => discoverRepos(pi, root, options!.recursive));
-				const recentIntent = profile.measureSync("extract conversation context", () =>
-					options!.messageMode === "ai" ? extractRecentIntent(ctx, options!) : "",
-				);
 				let messageGenerator: MessageGeneratorContext | undefined;
 				const planned: PlannedCommit[] = [];
 
@@ -70,7 +62,6 @@ export default function (pi: ExtensionAPI) {
 					const generated = await profile.measure(`generate message ${repoLabel}`, () =>
 						generateCommitMessage({
 							changeSet,
-							recentIntent,
 							generator: messageGenerator!,
 							messageTimeoutMs: options!.messageTimeoutMs,
 							messageMaxTokens: options!.messageMaxTokens,
@@ -196,10 +187,6 @@ async function resolveMessageModel(
 	ctx: ExtensionCommandContext,
 	options: AutocommitOptions,
 ): Promise<MessageGeneratorContext> {
-	if (options.messageMode !== "ai") {
-		return { unavailableReason: "AI disabled by --no-ai/messageMode=fallback" };
-	}
-
 	const requested = options.model?.trim();
 	if (!requested) {
 		return { unavailableReason: "no model selected; set .pi-commit.json model or pass --model" };
@@ -253,13 +240,9 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 		stageMode: config.defaultMode ?? DEFAULT_OPTIONS.stageMode,
 		recursive: config.recursive ?? DEFAULT_OPTIONS.recursive,
 		model: config.model,
-		messageMode: config.messageMode ?? DEFAULT_OPTIONS.messageMode,
 		messageTimeoutMs: config.messageTimeoutMs ?? DEFAULT_OPTIONS.messageTimeoutMs,
 		messageMaxTokens: config.messageMaxTokens ?? DEFAULT_OPTIONS.messageMaxTokens,
 		maxMessageChars: config.maxMessageChars ?? DEFAULT_OPTIONS.maxMessageChars,
-		contextMode: config.contextMode ?? DEFAULT_OPTIONS.contextMode,
-		recentPromptCount: config.recentPromptCount ?? DEFAULT_OPTIONS.recentPromptCount,
-		maxContextBytes: config.maxContextBytes ?? DEFAULT_OPTIONS.maxContextBytes,
 		maxDiffBytes: config.maxDiffBytes ?? DEFAULT_OPTIONS.maxDiffBytes,
 		yes: config.confirmBeforeCommit === false,
 		profile: config.profile ?? DEFAULT_OPTIONS.profile,
@@ -305,14 +288,6 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 				break;
 			case "--model":
 				options.model = inlineValue ?? requireValue(tokens, ++i, "--model");
-				options.messageMode = "ai";
-				break;
-			case "--ai":
-				options.messageMode = "ai";
-				break;
-			case "--no-ai":
-			case "--fallback-message":
-				options.messageMode = "fallback";
 				break;
 			case "--message-timeout":
 			case "--message-timeout-ms":
@@ -329,14 +304,6 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 			case "--max-diff-bytes":
 				options.maxDiffBytes = parseNonNegativeInteger(inlineValue ?? requireValue(tokens, ++i, "--max-diff-bytes"), "--max-diff-bytes");
 				break;
-			case "--context": {
-				const value = inlineValue ?? requireValue(tokens, ++i, "--context");
-				if (value !== "none" && value !== "recent" && value !== "session") {
-					throw new Error("--context must be one of: none, recent, session");
-				}
-				options.contextMode = value;
-				break;
-			}
 			default:
 				throw new Error(`Unknown option: ${token}`);
 		}
@@ -365,7 +332,7 @@ function parseNonNegativeInteger(value: string, flag: string): number {
 function formatPlan(planned: PlannedCommit[], options: AutocommitOptions): string {
 	const lines = [
 		options.dryRun ? "autocommit dry run" : "autocommit plan",
-		`mode: ${options.stageMode}, recursive: ${options.recursive}, messages: ${options.messageMode}, hooks: ${options.noVerify ? "disabled" : "enabled"}`,
+		`mode: ${options.stageMode}, recursive: ${options.recursive}, hooks: ${options.noVerify ? "disabled" : "enabled"}`,
 		"",
 	];
 	for (const item of planned) {
