@@ -71,6 +71,8 @@ cp .pi-commit.example.json .pi-commit.json
   // Thinking/reasoning effort for the model. "off" disables thinking (fastest/cheapest).
   // Use "low"-"max" for more deliberate message generation.
   "thinkingLevel": "off",
+  // Optional complete system prompt override. Omit or leave blank to use the built-in default.
+  // See .pi-commit.example.json for the full default prompt to customize.
 }
 ```
 
@@ -84,11 +86,17 @@ cp .pi-commit.example.json .pi-commit.json
 | `profile` | boolean | `false` | Include a timing breakdown in autocommit output. Fallback reasons are shown whenever AI generation falls back. |
 | `thinkingLevel` | `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, `"max"` | `"off"` | Thinking/reasoning effort for the model. `"off"` disables extended thinking for fastest, cheapest generation. Higher levels make the model reason more before composing the commit message, which can improve quality for complex changes but increases token usage and latency. |
 
+| `prompt` | string | built-in system prompt | Replaces the entire commit-generation system prompt for every repository processed in this run. Omitted or blank strings use the built-in default. Generated messages still undergo Conventional Commit validation. |
+
+The full default prompt is included in `.pi-commit.example.json`; edit its `prompt` value to customize it. JSON strings encode newlines as `\n`. Custom prompts are used verbatim, without appended built-in instructions. Repository metadata and staged changes are still supplied separately in the user message. This is a config-only setting; no `--prompt` flag or file-path expansion is supported.
+
 Generation uses provider/SDK token defaults. There is no total message character cap or shortening pass; `messageTimeoutMs` still controls the timeout.
 
 ## Commit messages and submodules
 
-Messages use Conventional Commits for future changelog generation: accurate types (`feat`, `fix`, `refactor`, `docs`, `chore`, etc.), meaningful scopes, subjects usually under 90 chars and capped around 120, non-imperative descriptions of what changed, and optional bodies for motivation/impact.
+If model output lacks a valid Conventional Commit header, its description is preserved under a conservative `chore` prefix, with the fallback reason still shown. Long descriptions are retained in full in the body. The common `deps:` prefix is repaired to `chore(deps):`. The generic `repository changed` fallback is used when no usable model text is available (for example, an error or timeout).
+
+Messages use Conventional Commits for future changelog generation: accurate types (`feat`, `fix`, `refactor`, `docs`, `chore`, etc.), meaningful scopes, first lines usually under 90 chars and at most 120, concrete descriptions of what changed (imperative phrasing is allowed), and optional bodies for motivation/impact.
 
 Example:
 

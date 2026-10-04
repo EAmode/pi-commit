@@ -14,7 +14,7 @@ export function isConventionalCommit(message: string): boolean {
 }
 
 export function repairConventionalCommit(raw: string): string | null {
-	const cleaned = cleanModelMessage(raw);
+	const cleaned = cleanModelMessage(raw).replace(/^deps(?=: )/, "chore(deps)");
 	if (isConventionalCommit(cleaned)) return cleaned;
 
 	const lines = cleaned.split("\n");
@@ -28,9 +28,22 @@ export function repairConventionalCommit(raw: string): string | null {
 	return null;
 }
 
-export function fallbackMessage(changedFiles: string[], repoRelativePath: string): string {
+export function fallbackMessage(changedFiles: string[], repoRelativePath: string, modelDescription?: string): string {
 	const scope = inferScope(changedFiles, repoRelativePath);
-	return `chore${scope ? `(${scope})` : ""}: repository changed`;
+	const prefix = `chore${scope ? `(${scope})` : ""}: `;
+	const cleaned = cleanModelMessage(modelDescription ?? "");
+	if (!cleaned) return `${prefix}repository changed`;
+
+	const [firstLine, ...bodyLines] = cleaned.split("\n");
+	const description = firstLine.trim();
+	const body = bodyLines.join("\n").trim();
+	// Keep the full description in the body if it cannot fit in the subject.
+	const budget = Math.max(1, 120 - prefix.length);
+	if (description.length > budget) {
+		const subject = `${description.slice(0, Math.max(1, budget - 3)).trimEnd()}...`;
+		return `${prefix}${subject}\n\n${cleaned}`;
+	}
+	return `${prefix}${description}${body ? `\n\n${body}` : ""}`;
 }
 
 export function inferScope(changedFiles: string[], repoRelativePath: string): string {

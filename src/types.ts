@@ -13,6 +13,7 @@ export interface AutocommitOptions {
 	maxDiffBytes: number;
 	profile: boolean;
 	thinkingLevel?: ModelThinkingLevel;
+	prompt?: string;
 }
 
 export interface PiCommitConfig {
@@ -23,6 +24,7 @@ export interface PiCommitConfig {
 	confirmBeforeCommit?: boolean;
 	profile?: boolean;
 	thinkingLevel?: ModelThinkingLevel;
+	prompt?: string;
 }
 
 export interface RepoInfo {

@@ -63,6 +63,7 @@ export default function (pi: ExtensionAPI) {
 							generator: messageGenerator!,
 							messageTimeoutMs: options!.messageTimeoutMs,
 							thinkingLevel: options!.thinkingLevel,
+							prompt: options!.prompt,
 							signal: ctx.signal,
 						}),
 					);
@@ -162,6 +163,9 @@ async function loadConfig(cwd: string): Promise<PiCommitConfig> {
 		if (errors.length > 0) {
 			throw new Error(formatJsoncErrors(text, errors));
 		}
+		if (config?.prompt !== undefined && typeof config.prompt !== "string") {
+			throw new Error("prompt must be a string");
+		}
 		return (config ?? {}) as PiCommitConfig;
 	} catch (error: any) {
 		if (error?.code === "ENOENT") return {};
@@ -241,6 +245,7 @@ function parseArgs(rawArgs: string, config: PiCommitConfig): AutocommitOptions {
 		yes: config.confirmBeforeCommit === false,
 		profile: config.profile ?? DEFAULT_OPTIONS.profile,
 		thinkingLevel: config.thinkingLevel ?? DEFAULT_OPTIONS.thinkingLevel,
+		prompt: config.prompt,
 	};
 
 	const tokens = tokenize(rawArgs || "");
