@@ -1,6 +1,6 @@
 {
   "name": "@eamode/pi-commit",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "pi extension for automatic changelog-friendly Conventional Commits with submodule support.",
   "type": "module",
   "license": "MIT",
